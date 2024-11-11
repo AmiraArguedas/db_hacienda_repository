@@ -1,42 +1,32 @@
 import requests
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from .models import Contribuyente
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.views import APIView
+from .serializers import ContribuyenteSerializer
 
-@csrf_exempt
-def consultar_contribuyente(request, identificacion):
-    url = f"https://api.hacienda.go.cr/fe/ae?identificacion={identificacion}"
+class ContribuyenteListCreate(APIView):
     
-    try:
-        # Realizamos la consulta a la API
-        response = requests.get(url)
-        response.raise_for_status()
+    def get(self, request, identificacion):
+        # URL de la API externa de Hacienda
+        url = f"https://api.hacienda.go.cr/fe/ae?identificacion={identificacion}"
         
-        # Si la respuesta es exitosa, extraemos los datos
-        data = response.json()
+        try:
+            # Realizar la solicitud HTTP GET
+            response = requests.get(url)
+            
+            # Verificar si la respuesta es exitosa
+            if response.status_code == 200:
+                # Suponiendo que la API de Hacienda devuelve los datos en formato JSON
+                data = response.json()
 
-        if 'nombre' in data:
-            nombres = data['nombre'].split(' ')
-            nombre1 = nombres[0] if len(nombres) > 0 else None
-            nombre2 = nombres[1] if len(nombres) > 1 else None
-
-            apellidos = data['apellido'].split(' ')
-            apellido1 = apellidos[0] if len(apellidos) > 0 else None
-            apellido2 = apellidos[1] if len(apellidos) > 1 else None
-
-            # Guardamos los datos en la base de datos
-            contribuyente, created = Contribuyente.objects.update_or_create(
-                identificacion=identificacion,
-                defaults={
-                    'nombre1': nombre1,
-                    'nombre2': nombre2,
-                    'apellido1': apellido1,
-                    'apellido2': apellido2,
-                }
-            )
-            return JsonResponse({'status': 'success', 'contribuyente': data}, status=200)
-
-        return JsonResponse({'error': 'Datos no encontrados'}, status=404)
-
-    except requests.exceptions.RequestException as e:
-        return JsonResponse({'error': str(e)}, status=500)
+                # Aquí puedes realizar cualquier validación adicional de los datos si es necesario
+                # Si la API de Hacienda devuelve la información como esperas, puedes retornarla directamente
+                
+                return Response(data, status=status.HTTP_200_OK)
+            else:
+                # Si la respuesta de la API externa no es exitosa
+                return Response({"detail": "Error al consultar el contribuyente en la API externa"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        except requests.exceptions.RequestException as e:
+            # Si ocurre un error en la solicitud HTTP (conexión, timeout, etc.)
+            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
