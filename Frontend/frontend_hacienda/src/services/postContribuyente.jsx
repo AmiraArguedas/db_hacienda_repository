@@ -20,10 +20,10 @@ export const uploadImageToS3 = async (file) => {
     return s3.upload(params).promise();
   };
 
-async function postContribuyente(gato, primerNombre, primerApellido, segundoApellido) {
+async function postContribuyente(gato, perro, primerApellido, segundoApellido) {
     const contribuyenteData = {
         gato,
-        primerNombre,
+        perro,
         primerApellido,
         segundoApellido
     };
